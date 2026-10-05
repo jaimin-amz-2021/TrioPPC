@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrioPerspective – Amazon PPC Bulk Sheet Generator</title>
+<script src="/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111;--s1:#181818;--s2:#202020;--s3:#282828;--s4:#333;
+  --org:#FF6B1A;--org2:#FF8C47;--orgd:rgba(255,107,26,0.11);--orgb:rgba(255,107,26,0.28);
+  --w1:#F4F3F1;--w2:#C6C4C0;--w3:#888680;--w4:#4E4D4A;
+  --grn:#34D399;--red:#F87171;--blue:#60A5FA;--pur:#A78BFA;
+  --b1:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.10);--b3:rgba(255,255,255,0.17);
+  --r:7px;--r2:11px;
+}
+html,body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--w1);font-size:14px;line-height:1.5;height:100%;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh}
+.topbar{background:var(--s1);border-bottom:1px solid var(--b2);height:58px;padding:0 24px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.tb-logo{display:flex;align-items:center;gap:10px}
+.tb-icon{width:34px;height:34px;background:var(--org);border-radius:var(--r);display:grid;place-items:center;flex-shrink:0}
+.tb-name{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:17px;font-weight:800;letter-spacing:-.2px}
+.tb-sep{width:1px;height:22px;background:var(--b2)}
+.tb-sub{font-size:13px;color:var(--w3)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.tb-badge{font-size:11px;color:var(--grn);display:flex;align-items:center;gap:5px;border:1px solid rgba(52,211,153,.25);padding:5px 11px;border-radius:20px;font-weight:500}
+.tb-badge::before{content:'';width:6px;height:6px;background:var(--grn);border-radius:50%}
+.btn-sm{background:transparent;border:1px solid var(--b2);color:var(--w2);border-radius:var(--r);padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-sm:hover{border-color:var(--org);color:var(--org)}
+.btn-main{background:var(--org);border:none;color:#fff;border-radius:var(--r);padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:6px}
+.btn-main:hover{background:var(--org2)}
+.btn-main:disabled{opacity:.5;cursor:not-allowed}
+.statsbar{background:var(--s2);border-bottom:1px solid var(--b1);height:50px;padding:0 24px;display:flex;align-items:center;flex-shrink:0}
+.si{display:flex;align-items:center;gap:9px;padding:0 20px;border-right:1px solid var(--b1)}
+.si:first-child{padding-left:0}
+.si-n{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:24px;font-weight:800;color:var(--org);letter-spacing:-1px;line-height:1}
+.si-l{font-size:11px;color:var(--w3);font-weight:500}
+.sb-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.body{display:grid;grid-template-columns:270px 1fr;flex:1;overflow:hidden}
+.lpanel{background:var(--s1);border-right:1px solid var(--b2);display:flex;flex-direction:column;overflow:hidden}
+.lp-head{padding:15px 18px 11px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
+.lp-title{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:700;color:var(--w2)}
+.lp-n{font-size:11px;font-weight:600;padding:3px 9px;background:var(--orgd);color:var(--org);border:1px solid var(--orgb);border-radius:20px}
+.clist{flex:1;overflow-y:auto;padding:10px;scrollbar-width:thin;scrollbar-color:var(--s4) transparent}
+.clist::-webkit-scrollbar{width:4px}
+.clist::-webkit-scrollbar-thumb{background:var(--s4);border-radius:4px}
+.cc{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all .14s;position:relative}
+.cc:hover{border-color:var(--b2)}
+.cc.active{border-left:3px solid var(--org);border-color:var(--orgb);background:var(--orgd)}
+.cc-seq{font-size:11px;font-weight:500;color:var(--w3);margin-bottom:3px}
+.cc.active .cc-seq{color:var(--org)}
+.cc-name{font-size:13px;font-weight:600;color:var(--w1);padding-right:22px;line-height:1.3;word-break:break-all;margin-bottom:7px}
+.cc.active .cc-name{color:var(--org2)}
+.cc-tags{display:flex;gap:4px;flex-wrap:wrap}
+.ctag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px}
+.ct-auto{background:rgba(96,165,250,.12);color:var(--blue)}
+.ct-kw{background:rgba(52,211,153,.10);color:var(--grn)}
+.ct-pt{background:rgba(167,139,250,.10);color:var(--pur)}
+.ct-mp{background:var(--orgd);color:var(--org);border:1px solid var(--orgb)}
+.ct-g{background:var(--b1);color:var(--w3)}
+.cc-del{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--w4);cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;transition:all .12s}
+.cc-del:hover{color:var(--red);background:rgba(248,113,113,.1)}
+.add-btn{margin:10px;background:var(--org);border:none;color:#fff;border-radius:var(--r);padding:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:calc(100% - 20px);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;flex-shrink:0}
+.add-btn:hover{background:var(--org2)}
+.rpanel{display:flex;flex-direction:column;overflow:hidden}
+.r-tabs{background:var(--s1);border-bottom:1px solid var(--b2);padding:0 24px;display:flex;flex-shrink:0}
+.rtab{padding:16px 18px;font-size:13px;font-weight:500;cursor:pointer;color:var(--w3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s}
+.rtab:hover{color:var(--w2)}
+.rtab.active{color:var(--org);border-bottom-color:var(--org);font-weight:600}
+.rscroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 24px;scrollbar-width:thin;scrollbar-color:var(--s4) transparent}
+.rscroll::-webkit-scrollbar{width:4px}
+.rscroll::-webkit-scrollbar-thumb{background:var(--s4);border-radius:4px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--w3);padding:40px}
+.empty svg{opacity:.12;margin-bottom:20px}
+.empty h3{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:20px;font-weight:700;color:var(--w2);margin-bottom:8px}
+.empty p{font-size:14px;line-height:1.7;max-width:280px}
+.empty-hint{font-size:12px;color:var(--org);margin-top:14px;font-weight:600}
+.sc{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);margin-bottom:14px}
+.sc-head{padding:14px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:12px}
+.sc-dot{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0}
+.dot-org{background:var(--org)}.dot-blue{background:var(--blue)}.dot-grn{background:var(--grn)}.dot-pur{background:var(--pur)}.dot-red{background:var(--red)}
+.sc-title{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;color:var(--w1);letter-spacing:-.1px}
+.sc-sub{font-size:12px;color:var(--w3);margin-top:1px}
+.sc-opt{margin-left:auto;font-size:11px;font-weight:600;padding:3px 8px;border:1px solid var(--b2);border-radius:4px;color:var(--w3)}
+.sc-body{padding:18px}
+.mp-wrap{position:relative;margin-bottom:14px}
+.mp-sel{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;user-select:none;transition:all .15s}
+.mp-sel:hover{border-color:var(--b3)}
+.mp-sel.open{border-color:var(--org);border-bottom-left-radius:0;border-bottom-right-radius:0}
+.mp-sel-flag{font-size:26px;line-height:1;flex-shrink:0}
+.mp-sel-info{flex:1}
+.mp-sel-name{font-size:15px;font-weight:600;color:var(--w1)}
+.mp-sel-detail{font-size:12px;color:var(--w3);margin-top:2px}
+.mp-sel-sym{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:28px;font-weight:800;color:var(--org);letter-spacing:-1px;line-height:1}
+.mp-sel-arrow{font-size:11px;color:var(--w3);transition:transform .2s;flex-shrink:0;margin-left:8px}
+.mp-sel.open .mp-sel-arrow{transform:rotate(180deg)}
+.mp-drop{position:absolute;left:0;right:0;top:100%;background:var(--s2);border:1px solid var(--org);border-top:none;border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r);z-index:9999;max-height:280px;overflow-y:auto;overflow-x:hidden;display:none;scrollbar-width:thin;scrollbar-color:var(--s4) transparent}
+.mp-drop.open{display:block}
+.mp-drop::-webkit-scrollbar{width:4px}
+.mp-drop::-webkit-scrollbar-thumb{background:var(--s4)}
+.mp-search{padding:10px 12px;border-bottom:1px solid var(--b1);position:sticky;top:0;background:var(--s2);z-index:1}
+.mp-search input{background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:8px 12px;font-size:13px;color:var(--w1);font-family:inherit;width:100%}
+.mp-search input:focus{outline:none;border-color:var(--org)}
+.mp-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:background .1s;border-bottom:1px solid var(--b1)}
+.mp-opt:last-child{border-bottom:none}
+.mp-opt:hover{background:var(--s3)}
+.mp-opt.sel{background:var(--orgd)}
+.mp-opt-flag{font-size:20px;flex-shrink:0}
+.mp-opt-name{font-size:13px;font-weight:500;color:var(--w1)}
+.mp-opt-detail{font-size:11px;color:var(--w3)}
+.mp-opt-curr{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:15px;font-weight:700;color:var(--w3);margin-left:auto;padding-right:4px}
+.mp-opt.sel .mp-opt-curr{color:var(--org)}
+.mp-opt-check{font-size:14px;color:var(--org);width:16px;text-align:right;flex-shrink:0}
+.mp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+.mp-stat{background:var(--s3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 14px}
+.mp-stat-l{font-size:10px;font-weight:600;color:var(--w3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.mp-stat-v{font-size:15px;font-weight:700;color:var(--w2)}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fg:last-child{margin-bottom:0}
+label.fl{font-size:11px;font-weight:600;color:var(--w3);letter-spacing:.2px}
+.fhint{font-size:11px;color:var(--org2);font-weight:500;margin-top:3px}
+input[type=text],input[type=number],input[type=date],select,textarea{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:9px 12px;font-size:13px;color:var(--w1);font-family:inherit;width:100%;transition:border-color .14s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--org);background:var(--s3)}
+select option{background:var(--s2)}
+textarea{resize:vertical;min-height:90px;line-height:1.6}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.acct-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ao{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .14s}
+.ao:hover{border-color:var(--b3)}
+.ao.sel{border-color:var(--orgb);background:var(--orgd)}
+.ao h4{font-size:14px;font-weight:600;color:var(--w1);margin-bottom:4px}
+.ao p{font-size:12px;color:var(--w3);line-height:1.4}
+.ao.sel h4{color:var(--org)}
+.tgt-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.tc{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .14s;position:relative}
+.tc:hover{border-color:var(--b3)}
+.tc.sel{border-color:var(--orgb);background:var(--orgd)}
+.tc.sel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--org);border-radius:var(--r) var(--r) 0 0}
+.tc h4{font-size:13px;font-weight:600;color:var(--w2);margin-bottom:4px}
+.tc p{font-size:11px;color:var(--w3);line-height:1.4}
+.tc.sel h4{color:var(--org)}
+.tc.sel p{color:var(--w2)}
+.ag-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.ag-box{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px}
+.ag-bar{width:4px;border-radius:2px;flex-shrink:0;align-self:stretch}
+.ag-inner{flex:1}
+.ag-inner label{font-size:11px;font-weight:600;color:var(--w3);display:block;margin-bottom:5px}
+.chk{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer}
+.chk input[type=checkbox]{width:15px;height:15px;accent-color:var(--org);cursor:pointer;flex-shrink:0}
+.chk span{font-size:13px;color:var(--w2)}
+.chk-group{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px}
+.kw-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.kw-row input[type=text]{flex:3}
+.kw-row select{flex:1.4;min-width:90px}
+.kw-row input[type=number]{flex:1;min-width:78px}
+.rm{background:none;border:1px solid var(--b2);border-radius:var(--r);color:var(--w3);padding:7px 10px;cursor:pointer;font-size:12px;flex-shrink:0;transition:all .12s}
+.rm:hover{color:var(--red);border-color:var(--red)}
+.add-row{background:none;border:1.5px dashed var(--b2);border-radius:var(--r);color:var(--w3);padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;margin-top:4px;transition:all .14s}
+.add-row:hover{border-color:var(--org);color:var(--org);background:var(--orgd)}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.chip{font-size:11px;padding:3px 8px;border-radius:4px;background:var(--s3);border:1px solid var(--b2);color:var(--org);cursor:pointer;font-weight:600;transition:all .12s}
+.chip:hover{border-color:var(--org);background:var(--orgd)}
+.neg-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+.prev-kpis{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.kpi{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:12px 18px}
+.kpi-n{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-size:28px;font-weight:800;color:var(--org);letter-spacing:-1px;line-height:1}
+.kpi-l{font-size:11px;color:var(--w3);font-weight:500;margin-top:3px}
+.tbl-wrap{border:1px solid var(--b2);border-radius:var(--r2);overflow:auto}
+.ptbl{width:100%;border-collapse:collapse;font-size:12px}
+.ptbl th{background:var(--s2);padding:10px 13px;text-align:left;font-size:11px;font-weight:600;color:var(--w3);border-bottom:1px solid var(--b2);white-space:nowrap}
+.ptbl td{padding:9px 13px;border-bottom:1px solid var(--b1);color:var(--w2);white-space:nowrap}
+.ptbl tr:hover td{background:var(--s2)}
+.ptbl tr:last-child td{border-bottom:none}
+.etag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
+.e-c{background:rgba(96,165,250,.12);color:var(--blue)}
+.e-ag{background:rgba(52,211,153,.10);color:var(--grn)}
+.e-pa{background:rgba(255,107,26,.12);color:var(--org2)}
+.e-pt{background:rgba(167,139,250,.10);color:var(--pur)}
+.e-kw{background:rgba(96,165,250,.08);color:#93C5FD}
+.e-nk{background:rgba(248,113,113,.10);color:var(--red)}
+.e-ba{background:var(--b1);color:var(--w3)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s1);border:1px solid var(--grn);color:var(--grn);padding:12px 20px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:99999;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .3s ease}
+.toast.err{border-color:var(--red);color:var(--red)}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="tb-icon">
+      <svg width="20" height="20" viewBox="0 0 100 100" fill="none"><path d="M8 8L8 27L41 27L41 16L59 16L59 27L92 27L92 8ZM41 27L59 27L59 92L41 92Z" fill="white"/></svg>
+    </div>
+    <span class="tb-name">TRIOPERSPECTIVE</span>
+  </div>
+  <div class="tb-sep"></div>
+  <span class="tb-sub">Amazon PPC Bulk Sheet Generator</span>
+  <div class="tb-right">
+    <div class="tb-badge">Amazon Ads Compatible</div>
+    <button class="btn-sm" onclick="saveConfig()">Save Config</button>
+    <button class="btn-sm" onclick="loadConfig()">Load Config</button>
+    <button class="btn-main" id="dl-btn" onclick="doExport()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export .xlsx
+    </button>
+  </div>
+</div>
+<div class="statsbar">
+  <div class="si"><div class="si-n" id="sb-c">0</div><div class="si-l">Campaigns</div></div>
+  <div class="si"><div class="si-n" id="sb-p">0</div><div class="si-l">Products</div></div>
+  <div class="si"><div class="si-n" id="sb-ag">0</div><div class="si-l">Ad Groups</div></div>
+  <div class="si"><div class="si-n" id="sb-r">0</div><div class="si-l">Total Rows</div></div>
+  <div class="sb-r">
+    <button class="btn-sm" onclick="doPreview()">&#8635; Preview</button>
+    <button class="btn-main" onclick="doExport()">&#8595; Download .xlsx</button>
+  </div>
+</div>
+<div class="body">
+  <div class="lpanel">
+    <div class="lp-head"><span class="lp-title">Campaigns</span><span class="lp-n" id="lp-n">0</span></div>
+    <div class="clist" id="clist"></div>
+    <button class="add-btn" onclick="addCamp()"><span style="font-size:20px;font-weight:300;line-height:1">+</span> New Campaign</button>
+  </div>
+  <div class="rpanel">
+    <div class="r-tabs">
+      <div class="rtab active" id="tab-s" onclick="switchTab('setup')">Setup</div>
+      <div class="rtab" id="tab-p" onclick="doPreview()">Preview</div>
+    </div>
+    <div class="rscroll" id="pane-setup">
+      <div class="empty">
+        <svg width="60" height="60" viewBox="0 0 100 100" fill="none"><path d="M8 8L8 27L41 27L41 16L59 16L59 27L92 27L92 8ZM41 27L59 27L59 92L41 92Z" fill="white"/></svg>
+        <h3>No Campaign Selected</h3>
+        <p>Click <strong>+ New Campaign</strong> to start building your Amazon PPC bulk sheet.</p>
+        <div class="empty-hint">&#8595; Start here</div>
+      </div>
+    </div>
+    <div class="rscroll" id="pane-preview" style="display:none"></div>
+  </div>
+</div>
+</div>
+
+<script>
+const MARKETS=[
+  {id:'US',flag:'🇺🇸',name:'United States',domain:'amazon.com',curr:'USD',sym:'$',minBid:0.02,defBid:0.75,defBud:50,step:0.01},
+  {id:'UK',flag:'🇬🇧',name:'United Kingdom',domain:'amazon.co.uk',curr:'GBP',sym:'£',minBid:0.02,defBid:0.60,defBud:40,step:0.01},
+  {id:'DE',flag:'🇩🇪',name:'Germany',domain:'amazon.de',curr:'EUR',sym:'€',minBid:0.02,defBid:0.60,defBud:40,step:0.01},
+  {id:'FR',flag:'🇫🇷',name:'France',domain:'amazon.fr',curr:'EUR',sym:'€',minBid:0.02,defBid:0.60,defBud:40,step:0.01},
+  {id:'IT',flag:'🇮🇹',name:'Italy',domain:'amazon.it',curr:'EUR',sym:'€',minBid:0.02,defBid:0.60,defBud:40,step:0.01},
+  {id:'ES',flag:'🇪🇸',name:'Spain',domain:'amazon.es',curr:'EUR',sym:'€',minBid:0.02,defBid:0.55,defBud:35,step:0.01},
+  {id:'NL',flag:'🇳🇱',name:'Netherlands',domain:'amazon.nl',curr:'EUR',sym:'€',minBid:0.02,defBid:0.55,defBud:35,step:0.01},
+  {id:'BE',flag:'🇧🇪',name:'Belgium',domain:'amazon.com.be',curr:'EUR',sym:'€',minBid:0.02,defBid:0.55,defBud:35,step:0.01},
+  {id:'SE',flag:'🇸🇪',name:'Sweden',domain:'amazon.se',curr:'SEK',sym:'kr',minBid:0.20,defBid:7,defBud:400,step:0.10},
+  {id:'PL',flag:'🇵🇱',name:'Poland',domain:'amazon.pl',curr:'PLN',sym:'zł',minBid:0.10,defBid:2.5,defBud:180,step:0.10},
+  {id:'IN',flag:'🇮🇳',name:'India',domain:'amazon.in',curr:'INR',sym:'₹',minBid:0.50,defBid:8,defBud:500,step:0.50},
+  {id:'JP',flag:'🇯🇵',name:'Japan',domain:'amazon.co.jp',curr:'JPY',sym:'¥',minBid:2,defBid:80,defBud:5000,step:1},
+  {id:'AU',flag:'🇦🇺',name:'Australia',domain:'amazon.com.au',curr:'AUD',sym:'A$',minBid:0.02,defBid:0.90,defBud:60,step:0.01},
+  {id:'CA',flag:'🇨🇦',name:'Canada',domain:'amazon.ca',curr:'CAD',sym:'C$',minBid:0.02,defBid:0.80,defBud:55,step:0.01},
+  {id:'MX',flag:'🇲🇽',name:'Mexico',domain:'amazon.com.mx',curr:'MXN',sym:'MX$',minBid:0.10,defBid:10,defBud:700,step:0.10},
+  {id:'BR',flag:'🇧🇷',name:'Brazil',domain:'amazon.com.br',curr:'BRL',sym:'R$',minBid:0.07,defBid:3.5,defBud:250,step:0.05},
+  {id:'AE',flag:'🇦🇪',name:'UAE',domain:'amazon.ae',curr:'AED',sym:'AED',minBid:0.07,defBid:2.5,defBud:180,step:0.05},
+  {id:'SA',flag:'🇸🇦',name:'Saudi Arabia',domain:'amazon.sa',curr:'SAR',sym:'SAR',minBid:0.07,defBid:2.5,defBud:180,step:0.05},
+  {id:'SG',flag:'🇸🇬',name:'Singapore',domain:'amazon.sg',curr:'SGD',sym:'S$',minBid:0.02,defBid:0.80,defBud:55,step:0.01},
+  {id:'TR',flag:'🇹🇷',name:'Turkey',domain:'amazon.com.tr',curr:'TRY',sym:'TRY',minBid:0.30,defBid:20,defBud:1200,step:0.10},
+];
+const mpMap={};MARKETS.forEach(m=>mpMap[m.id]=m);
+let campaigns=[],activeCampId=null,openDropId=null;
+
+function uid(){return 'c'+Date.now()+Math.random().toString(36).slice(2,6);}
+function newCamp(){
+  const m=mpMap['US'],n=campaigns.length+1;
+  return{id:uid(),name:'Campaign '+n,market:'US',acct:'seller',tgt:{auto:true,kw:false,pt:false},
+    products:'',campStruct:'SPC',campTpl:'{{ASIN}}_{{DATE}}',adgStruct:'SPAG',adgTpl:'{{CAMPAIGN_NAME}}_AG',
+    autoClose:true,autoLoose:true,autoSubs:true,autoComp:true,
+    bidClose:m.defBid,bidLoose:+(m.defBid*.67).toFixed(2),bidSubs:+(m.defBid*.53).toFixed(2),bidComp:+(m.defBid*.40).toFixed(2),
+    keywords:[],ptAsins:'',ptBid:m.defBid,
+    defBid:m.defBid,budget:m.defBud,bidding:'Dynamic bids - down only',
+    startDate:new Date().toISOString().slice(0,10),state:'enabled',
+    plTop:0,plRest:0,plProd:0,
+    negKws:'',negExact:true,negPhrase:true,negCampLvl:true,negAdgLvl:false,negAsins:''};
+}
+
+function renderList(){
+  document.getElementById('lp-n').textContent=campaigns.length;
+  const el=document.getElementById('clist');
+  if(!campaigns.length){el.innerHTML='<div style="padding:20px 14px;text-align:center;color:var(--w3);font-size:13px;line-height:1.9">No campaigns yet.<br>Click + New Campaign below.</div>';return;}
+  el.innerHTML=campaigns.map((c,i)=>{
+    const m=mpMap[c.market]||mpMap['US'];
+    const prods=c.products.split('\n').filter(l=>l.trim()).length;
+    const tags=[];
+    if(c.tgt.auto)tags.push('<span class="ctag ct-auto">Auto</span>');
+    if(c.tgt.kw)tags.push('<span class="ctag ct-kw">KW</span>');
+    if(c.tgt.pt)tags.push('<span class="ctag ct-pt">PT</span>');
+    tags.push(`<span class="ctag ct-mp">${m.flag} ${m.curr}</span>`);
+    if(prods>0)tags.push(`<span class="ctag ct-g">${prods} prods</span>`);
+    return`<div class="cc${c.id===activeCampId?' active':''}" onclick="selCamp('${c.id}')">
+      <button class="cc-del" onclick="delCamp(event,'${c.id}')">✕</button>
+      <div class="cc-seq">Campaign ${i+1}</div>
+      <div class="cc-name">${esc(c.name)||'Untitled'}</div>
+      <div class="cc-tags">${tags.join('')}</div>
+    </div>`;
+  }).join('');
+  syncStats();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function addCamp(){const c=newCamp();campaigns.push(c);activeCampId=c.id;renderList();renderEditor(c.id);switchTab('setup');}
+function selCamp(id){activeCampId=id;renderList();renderEditor(id);switchTab('setup');}
+function delCamp(e,id){e.stopPropagation();campaigns=campaigns.filter(c=>c.id!==id);if(activeCampId===id)activeCampId=campaigns.length?campaigns[campaigns.length-1].id:null;renderList();if(activeCampId)renderEditor(activeCampId);else showEmpty();syncStats();}
+function showEmpty(){document.getElementById('pane-setup').innerHTML='<div class="empty"><svg width="60" height="60" viewBox="0 0 100 100" fill="none"><path d="M8 8L8 27L41 27L41 16L59 16L59 27L92 27L92 8ZM41 27L59 27L59 92L41 92Z" fill="white"/></svg><h3>No Campaign</h3><p>Click + New Campaign to begin.</p></div>';}
+
+function syncStats(){
+  let tp=0,ta=0,tr=0;
+  campaigns.forEach(c=>{const r=buildRows(c);tp+=c.products.split('\n').filter(l=>l.trim()).length;ta+=r.filter(x=>x[1]==='Ad group').length;tr+=r.length;});
+  document.getElementById('sb-c').textContent=campaigns.length;
+  document.getElementById('sb-p').textContent=tp;
+  document.getElementById('sb-ag').textContent=ta;
+  document.getElementById('sb-r').textContent=tr;
+}
+
+function toggleDrop(cId){
+  if(openDropId&&openDropId!==cId)closeDrop(openDropId);
+  const drop=document.getElementById('mpd-'+cId),sel=document.getElementById('mps-'+cId);
+  if(!drop)return;
+  const isOpen=drop.classList.contains('open');
+  if(isOpen)closeDrop(cId);
+  else{drop.classList.add('open');sel.classList.add('open');openDropId=cId;setTimeout(()=>{const inp=document.getElementById('mpsi-'+cId);if(inp)inp.focus();},40);}
+}
+function closeDrop(cId){
+  const drop=document.getElementById('mpd-'+cId),sel=document.getElementById('mps-'+cId);
+  if(drop)drop.classList.remove('open');if(sel)sel.classList.remove('open');if(openDropId===cId)openDropId=null;
+}
+document.addEventListener('click',e=>{if(!openDropId)return;const wrap=document.getElementById('mpw-'+openDropId);if(wrap&&!wrap.contains(e.target))closeDrop(openDropId);},true);
+
+function filterMp(cId,q){const c=campaigns.find(x=>x.id===cId);if(!c)return;document.getElementById('mpo-'+cId).innerHTML=mpOpts(cId,c.market,q);}
+function mpOpts(cId,sel,q){
+  return MARKETS.filter(m=>!q||m.name.toLowerCase().includes(q.toLowerCase())||m.curr.toLowerCase().includes(q.toLowerCase())||m.id.toLowerCase().includes(q.toLowerCase()))
+    .map(m=>`<div class="mp-opt${sel===m.id?' sel':''}" onclick="pickMp('${cId}','${m.id}')">
+      <span class="mp-opt-flag">${m.flag}</span>
+      <div><div class="mp-opt-name">${m.name}</div><div class="mp-opt-detail">${m.domain} · ${m.curr}</div></div>
+      <span class="mp-opt-curr">${m.sym}</span>
+      <span class="mp-opt-check">${sel===m.id?'✓':''}</span>
+    </div>`).join('');
+}
+function pickMp(cId,mId){
+  const c=campaigns.find(x=>x.id===cId);if(!c)return;
+  const m=mpMap[mId]||mpMap['US'];
+  c.market=mId;c.defBid=m.defBid;c.budget=m.defBud;
+  c.bidClose=m.defBid;c.bidLoose=+(m.defBid*.67).toFixed(2);c.bidSubs=+(m.defBid*.53).toFixed(2);c.bidComp=+(m.defBid*.40).toFixed(2);
+  c.ptBid=m.defBid;if(c.keywords)c.keywords.forEach(kw=>kw.bid=m.defBid);
+  closeDrop(cId);renderList();renderEditor(cId);
+}
+function mpBlock(cId,market){
+  const m=mpMap[market]||mpMap['US'];
+  return`<div class="mp-wrap" id="mpw-${cId}">
+    <div class="mp-sel" id="mps-${cId}" onclick="toggleDrop('${cId}')">
+      <span class="mp-sel-flag">${m.flag}</span>
+      <div class="mp-sel-info"><div class="mp-sel-name">${m.name}</div><div class="mp-sel-detail">${m.domain} · ${m.curr} · Min bid ${m.sym}${m.minBid}</div></div>
+      <span class="mp-sel-sym">${m.sym}</span>
+      <span class="mp-sel-arrow">▼</span>
+    </div>
+    <div class="mp-drop" id="mpd-${cId}">
+      <div class="mp-search"><input type="text" id="mpsi-${cId}" placeholder="Search marketplace or currency..." oninput="filterMp('${cId}',this.value)" onclick="event.stopPropagation()"></div>
+      <div id="mpo-${cId}">${mpOpts(cId,market,'')}</div>
+    </div>
+    <div class="mp-stats">
+      <div class="mp-stat"><div class="mp-stat-l">Currency</div><div class="mp-stat-v">${m.curr} (${m.sym})</div></div>
+      <div class="mp-stat"><div class="mp-stat-l">Default Bid</div><div class="mp-stat-v">${m.sym}${m.defBid}</div></div>
+      <div class="mp-stat"><div class="mp-stat-l">Suggested Budget</div><div class="mp-stat-v">${m.sym}${m.defBud}/day</div></div>
+    </div>
+  </div>`;
+}
+
+function renderEditor(id){
+  const c=campaigns.find(x=>x.id===id);if(!c){showEmpty();return;}
+  const m=mpMap[c.market]||mpMap['US'],S=m.sym,C=m.curr;
+  document.getElementById('pane-setup').innerHTML=`
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-org"></div><div><div class="sc-title">Campaign Name &amp; Marketplace</div><div class="sc-sub">Set name, select marketplace — bids auto-adjust per currency</div></div></div><div class="sc-body">
+    <div class="g2" style="margin-bottom:16px">
+      <div class="fg"><label class="fl">Campaign Name</label><input type="text" value="${esc(c.name)}" oninput="upd('${id}','name',this.value);renderList()"></div>
+      <div class="fg"><label class="fl">Campaign State</label><select onchange="upd('${id}','state',this.value)"><option value="enabled"${c.state==='enabled'?' selected':''}>Enabled</option><option value="paused"${c.state==='paused'?' selected':''}>Paused</option></select></div>
+    </div>
+    ${mpBlock(id,c.market)}
+  </div></div>
+
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-blue"></div><div><div class="sc-title">Account Type</div></div></div><div class="sc-body"><div class="acct-row">
+    <div class="ao${c.acct==='seller'?' sel':''}" id="${id}-as" onclick="upd('${id}','acct','seller');document.getElementById('${id}-as').classList.add('sel');document.getElementById('${id}-av').classList.remove('sel')"><h4>Seller Central</h4><p>ASINs + SKUs. Bulk sheet uses SKU column.</p></div>
+    <div class="ao${c.acct==='vendor'?' sel':''}" id="${id}-av" onclick="upd('${id}','acct','vendor');document.getElementById('${id}-av').classList.add('sel');document.getElementById('${id}-as').classList.remove('sel')"><h4>Vendor Central</h4><p>ASINs only. Uses ASIN column.</p></div>
+  </div></div></div>
+
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-grn"></div><div><div class="sc-title">Products</div><div class="sc-sub">ASIN, SKU, Group — one per line</div></div></div><div class="sc-body">
+    <textarea oninput="upd('${id}','products',this.value);syncStats()" placeholder="B01K28121U,My-SKU,GRP&#10;B09EXAMPLE,SKU-2,GRP2">${esc(c.products)}</textarea>
+  </div></div>
+
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-blue"></div><div><div class="sc-title">Campaign Structure &amp; Naming</div></div></div><div class="sc-body"><div class="g2">
+    <div class="fg"><label class="fl">Campaign Structure</label><select onchange="upd('${id}','campStruct',this.value)"><option value="SPC"${c.campStruct==='SPC'?' selected':''}>SPC — Single Product</option><option value="MPAG"${c.campStruct==='MPAG'?' selected':''}>MPAG — Multi Product</option></select></div>
+    <div class="fg"><label class="fl">Campaign Name Template</label><input type="text" value="${esc(c.campTpl)}" oninput="upd('${id}','campTpl',this.value)"><div class="chips">${['{{ASIN}}','{{SKU}}','{{DATE}}','{{GROUP}}'].map(t=>`<span class="chip" onclick="appendT('${id}','campTpl','${t}')">${t}</span>`).join('')}</div></div>
+    <div class="fg"><label class="fl">Ad Group Structure</label><select onchange="upd('${id}','adgStruct',this.value)"><option value="SPAG"${c.adgStruct==='SPAG'?' selected':''}>SPAG — Single Product</option><option value="MPAG"${c.adgStruct==='MPAG'?' selected':''}>MPAG — Multi</option></select></div>
+    <div class="fg"><label class="fl">Ad Group Name Template</label><input type="text" value="${esc(c.adgTpl)}" oninput="upd('${id}','adgTpl',this.value)"><div class="chips">${['{{ASIN}}','{{SKU}}','{{CAMPAIGN_NAME}}'].map(t=>`<span class="chip" onclick="appendT('${id}','adgTpl','${t}')">${t}</span>`).join('')}</div></div>
+  </div></div></div>
+
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-pur"></div><div><div class="sc-title">Targeting Types</div><div class="sc-sub">Select one or more</div></div></div><div class="sc-body"><div class="tgt-row">
+    <div class="tc${c.tgt.auto?' sel':''}" onclick="toggleTgt('${id}','auto')"><h4>Auto Targeting</h4><p>Amazon targets relevant keywords and products automatically</p></div>
+    <div class="tc${c.tgt.kw?' sel':''}" onclick="toggleTgt('${id}','kw')"><h4>Keyword Targeting</h4><p>Manual targeting using specific search keywords</p></div>
+    <div class="tc${c.tgt.pt?' sel':''}" onclick="toggleTgt('${id}','pt')"><h4>Product Targeting</h4><p>Target specific ASINs or product pages</p></div>
+  </div></div></div>
+
+  ${c.tgt.auto?`<div class="sc"><div class="sc-head"><div class="sc-dot dot-blue"></div><div><div class="sc-title">Auto Targeting Groups</div><div class="sc-sub">Bids in ${C} (${S})</div></div></div><div class="sc-body">
+    <div class="chk-group">
+      <label class="chk"><input type="checkbox" ${c.autoClose?'checked':''} onchange="upd('${id}','autoClose',this.checked)"><span>Close Match</span></label>
+      <label class="chk"><input type="checkbox" ${c.autoLoose?'checked':''} onchange="upd('${id}','autoLoose',this.checked)"><span>Loose Match</span></label>
+      <label class="chk"><input type="checkbox" ${c.autoSubs?'checked':''} onchange="upd('${id}','autoSubs',this.checked)"><span>Substitutes</span></label>
+      <label class="chk"><input type="checkbox" ${c.autoComp?'checked':''} onchange="upd('${id}','autoComp',this.checked)"><span>Complements</span></label>
+    </div>
+    <div class="ag-grid">
+      <div class="ag-box"><div class="ag-bar" style="background:var(--grn)"></div><div class="ag-inner"><label>Close Match (${S})</label><input type="number" value="${c.bidClose}" step="${m.step}" min="${m.minBid}" oninput="upd('${id}','bidClose',parseFloat(this.value))"></div></div>
+      <div class="ag-box"><div class="ag-bar" style="background:var(--blue)"></div><div class="ag-inner"><label>Loose Match (${S})</label><input type="number" value="${c.bidLoose}" step="${m.step}" min="${m.minBid}" oninput="upd('${id}','bidLoose',parseFloat(this.value))"></div></div>
+      <div class="ag-box"><div class="ag-bar" style="background:var(--org)"></div><div class="ag-inner"><label>Substitutes (${S})</label><input type="number" value="${c.bidSubs}" step="${m.step}" min="${m.minBid}" oninput="upd('${id}','bidSubs',parseFloat(this.value))"></div></div>
+      <div class="ag-box"><div class="ag-bar" style="background:var(--pur)"></div><div class="ag-inner"><label>Complements (${S})</label><input type="number" value="${c.bidComp}" step="${m.step}" min="${m.minBid}" oninput="upd('${id}','bidComp',parseFloat(this.value))"></div></div>
+    </div>
+  </div></div>`:''}
+
+  ${c.tgt.kw?`<div class="sc"><div class="sc-head"><div class="sc-dot dot-grn"></div><div><div class="sc-title">Keywords</div><div class="sc-sub">Bids in ${C} (${S})</div></div></div><div class="sc-body">
+    <div id="${id}-kwl">${(c.keywords||[]).map((kw,ki)=>`<div class="kw-row">
+      <input type="text" value="${esc(kw.text||'')}" placeholder="Keyword text" oninput="updKw('${id}',${ki},'text',this.value)">
+      <select onchange="updKw('${id}',${ki},'match',this.value)">
+        <option value="exact"${kw.match==='exact'?' selected':''}>Exact</option>
+        <option value="phrase"${kw.match==='phrase'?' selected':''}>Phrase</option>
+        <option value="broad"${kw.match==='broad'?' selected':''}>Broad</option>
+      </select>
+      <input type="number" value="${kw.bid||m.defBid}" step="${m.step}" min="${m.minBid}" oninput="updKw('${id}',${ki},'bid',parseFloat(this.value))">
+      <button class="rm" onclick="rmKw('${id}',${ki})">✕</button>
+    </div>`).join('')}</div>
+    <button class="add-row" onclick="addKw('${id}')">+ Add Keyword</button>
+  </div></div>`:''}
+
+  ${c.tgt.pt?`<div class="sc"><div class="sc-head"><div class="sc-dot dot-pur"></div><div><div class="sc-title">Product Targeting</div><div class="sc-sub">Bid in ${C} (${S})</div></div></div><div class="sc-body">
+    <div class="g2">
+      <div class="fg" style="grid-column:1/-1"><label class="fl">Target ASINs — one per line</label><textarea oninput="upd('${id}','ptAsins',this.value)" placeholder="B07EXAMPLE1&#10;B08EXAMPLE2">${esc(c.ptAsins)}</textarea></div>
+      <div class="fg"><label class="fl">Bid (${S})</label><input type="number" value="${c.ptBid}" step="${m.step}" min="${m.minBid}" oninput="upd('${id}','ptBid',parseFloat(this.value))"></div>
+    </div>
+  </div></div>`:''}
+
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-org"></div><div><div class="sc-title">Campaign Settings</div><div class="sc-sub">${m.flag} ${m.name} · ${C}</div></div></div><div class="sc-body"><div class="g3">
+    <div class="fg"><label class="fl">Default Bid (${S})</label><input type="number" value="${c.defBid}" step="${m.step}" min="${m.minBid}" oninput="upd('${id}','defBid',parseFloat(this.value));syncStats()"><span class="fhint">Min: ${S}${m.minBid}</span></div>
+    <div class="fg"><label class="fl">Daily Budget (${S})</label><input type="number" value="${c.budget}" step="1" min="1" oninput="upd('${id}','budget',parseFloat(this.value))"><span class="fhint">Suggested: ${S}${m.defBud}</span></div>
+    <div class="fg"><label class="fl">Bidding Strategy</label><select onchange="upd('${id}','bidding',this.value)">
+      <option value="Dynamic bids - down only"${c.bidding==='Dynamic bids - down only'?' selected':''}>Dynamic — Down Only</option>
+      <option value="Dynamic bids - up and down"${c.bidding==='Dynamic bids - up and down'?' selected':''}>Dynamic — Up &amp; Down</option>
+      <option value="Fixed bids"${c.bidding==='Fixed bids'?' selected':''}>Fixed Bids</option>
+    </select></div>
+    <div class="fg"><label class="fl">Start Date</label><input type="date" value="${c.startDate}" oninput="upd('${id}','startDate',this.value)"></div>
+  </div></div></div>
+
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-blue"></div><div><div class="sc-title">Placement Adjustments</div><div class="sc-sub">0 = no row · Range 0–900%</div></div></div><div class="sc-body"><div class="g3">
+    <div class="fg"><label class="fl">Top of Search (%)</label><input type="number" value="${c.plTop}" min="0" max="900" oninput="upd('${id}','plTop',parseInt(this.value)||0)"></div>
+    <div class="fg"><label class="fl">Rest of Search (%)</label><input type="number" value="${c.plRest}" min="0" max="900" oninput="upd('${id}','plRest',parseInt(this.value)||0)"></div>
+    <div class="fg"><label class="fl">Product Pages (%)</label><input type="number" value="${c.plProd}" min="0" max="900" oninput="upd('${id}','plProd',parseInt(this.value)||0)"></div>
+  </div></div></div>
+
+  <div class="sc"><div class="sc-head"><div class="sc-dot dot-red"></div><div><div class="sc-title">Negative Keywords</div></div><span class="sc-opt">Optional</span></div><div class="sc-body"><div class="neg-grid">
+    <div class="fg"><label class="fl">Keywords — one per line</label><textarea oninput="upd('${id}','negKws',this.value)" placeholder="cheap&#10;free&#10;used">${esc(c.negKws)}</textarea></div>
+    <div>
+      <div style="margin-bottom:14px"><label class="fl" style="display:block;margin-bottom:8px">Match Types</label>
+        <label class="chk" style="margin-bottom:7px"><input type="checkbox" ${c.negExact?'checked':''} onchange="upd('${id}','negExact',this.checked)"><span>Negative Exact</span></label>
+        <label class="chk"><input type="checkbox" ${c.negPhrase?'checked':''} onchange="upd('${id}','negPhrase',this.checked)"><span>Negative Phrase</span></label>
+      </div>
+      <div><label class="fl" style="display:block;margin-bottom:8px">Level</label>
+        <label class="chk" style="margin-bottom:7px"><input type="checkbox" ${c.negCampLvl?'checked':''} onchange="upd('${id}','negCampLvl',this.checked)"><span>Campaign Level</span></label>
+        <label class="chk"><input type="checkbox" ${c.negAdgLvl?'checked':''} onchange="upd('${id}','negAdgLvl',this.checked)"><span>Ad Group Level</span></label>
+      </div>
+    </div>
+  </div></div></div>
+
+  <div class="sc" style="margin-bottom:24px"><div class="sc-head"><div class="sc-dot dot-red"></div><div><div class="sc-title">Negative Product Targeting</div><div class="sc-sub">Ad group level only</div></div><span class="sc-opt">Optional</span></div><div class="sc-body">
+    <div class="fg"><label class="fl">Exclude ASINs — one per line</label><textarea oninput="upd('${id}','negAsins',this.value)" placeholder="B07EXAMPLE1&#10;B08EXAMPLE2">${esc(c.negAsins)}</textarea></div>
+  </div></div>`;
+  syncStats();
+}
+
+function upd(id,k,v){const c=campaigns.find(x=>x.id===id);if(c)c[k]=v;}
+function toggleTgt(id,k){const c=campaigns.find(x=>x.id===id);if(!c)return;c.tgt[k]=!c.tgt[k];renderList();renderEditor(id);}
+function appendT(id,f,v){const c=campaigns.find(x=>x.id===id);if(!c)return;c[f]=(c[f]||'')+v;renderEditor(id);}
+function addKw(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const m=mpMap[c.market]||mpMap['US'];c.keywords.push({text:'',match:'exact',bid:m.defBid});renderEditor(id);}
+function updKw(id,i,f,v){const c=campaigns.find(x=>x.id===id);if(c&&c.keywords[i])c.keywords[i][f]=v;}
+function rmKw(id,i){const c=campaigns.find(x=>x.id===id);if(!c)return;c.keywords.splice(i,1);renderEditor(id);}
+
+const COLS=['Product','Entity','Operation','Campaign ID','Ad Group ID','Portfolio ID','Ad ID','Keyword ID','Product Targeting ID','Campaign Name','Ad Group Name','Start Date','End Date','Targeting Type','State','Daily Budget','SKU','Ad Group Default Bid','Bid','Keyword Text','Native Language Keyword','Native Language Locale','Match Type','Bidding Strategy','Placement','Percentage','Product Targeting Expression','Audience ID','Shopper Cohort Percentage','Shopper Cohort Type','Segment Name'];
+
+function buildRows(c){
+  const rows=[],m=mpMap[c.market]||mpMap['US'];
+  const prods=c.products.split('\n').filter(l=>l.trim()).map(l=>{const p=l.split(',').map(s=>s.trim());return{asin:p[0]||'',sku:p[1]||p[0]||'',grp:p[2]||''};});
+  const ds=(c.startDate||new Date().toISOString().slice(0,10)).replace(/-/g,'');
+
+  function row(entity,ov){
+    const r=COLS.map(()=>'');
+    r[0]='Sponsored Products';r[1]=entity;r[2]='Create';
+    Object.entries(ov).forEach(([k,v])=>{const i=COLS.indexOf(k);if(i>=0)r[i]=v===undefined||v===null?'':String(v);});
+    return r;
+  }
+
+  prods.forEach(p=>{
+    const cn=resolveTpl(c.campTpl,p,ds),an=resolveTpl(c.adgTpl,p,ds,cn),tt=c.tgt.auto?'auto':'manual';
+    rows.push(row('Campaign',{'Campaign ID':cn,'Campaign Name':cn,'Start Date':ds,'Targeting Type':tt,'State':c.state,'Daily Budget':c.budget,'Bidding Strategy':c.bidding}));
+    rows.push(row('Ad group',{'Campaign ID':cn,'Ad Group ID':an,'Ad Group Name':an,'State':c.state,'Ad Group Default Bid':c.defBid}));
+    rows.push(row('Product ad',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'SKU':c.acct==='seller'?p.sku:p.asin}));
+
+    if(c.tgt.auto){
+      [{chk:c.autoClose,bid:c.bidClose,ex:'close-match'},{chk:c.autoLoose,bid:c.bidLoose,ex:'loose-match'},{chk:c.autoSubs,bid:c.bidSubs,ex:'substitutes'},{chk:c.autoComp,bid:c.bidComp,ex:'complements'}]
+        .forEach(g=>{if(g.chk)rows.push(row('Product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Bid':g.bid,'Product Targeting Expression':g.ex}));});
+    }
+    if(c.tgt.kw&&c.keywords){
+      c.keywords.forEach(kw=>{if(kw.text)rows.push(row('Keyword',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Keyword Text':kw.text,'Match Type':kw.match,'Bid':kw.bid||c.defBid}));});
+    }
+    if(c.tgt.pt&&c.ptAsins){
+      c.ptAsins.split('\n').filter(a=>a.trim()).forEach(asin=>{rows.push(row('Product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Bid':c.ptBid||c.defBid,'Product Targeting Expression':`asin="${asin.trim()}"`}));});
+    }
+    [{v:c.plTop,pl:'placementTop'},{v:c.plRest,pl:'placementRestOfSearch'},{v:c.plProd,pl:'placementProductPage'}]
+      .forEach(pl=>{if(pl.v>0)rows.push(row('Bidding adjustment',{'Campaign ID':cn,'Placement':pl.pl,'Percentage':pl.v}));});
+    (c.negKws||'').split('\n').filter(k=>k.trim()).forEach(kw=>{
+      const al=c.negAdgLvl?an:'';
+      if(c.negExact)rows.push(row('Negative keyword',{'Campaign ID':cn,'Ad Group ID':al,'State':'enabled','Keyword Text':kw.trim(),'Match Type':'negativeExact'}));
+      if(c.negPhrase)rows.push(row('Negative keyword',{'Campaign ID':cn,'Ad Group ID':al,'State':'enabled','Keyword Text':kw.trim(),'Match Type':'negativePhrase'}));
+    });
+    (c.negAsins||'').split('\n').filter(a=>a.trim()).forEach(asin=>{rows.push(row('Negative product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':'enabled','Product Targeting Expression':`asin="${asin.trim()}"`}));});
+  });
+  return rows;
+}
+
+function resolveTpl(tpl,p,ds,campName){
+  return (tpl||'')
+    .replace(/\{\{ASIN\}\}/g,p.asin)
+    .replace(/\{\{SKU\}\}/g,p.sku)
+    .replace(/\{\{GROUP\}\}/g,p.grp||p.asin)
+    .replace(/\{\{DATE\}\}/g,ds)
+    .replace(/\{\{CAMPAIGN_NAME\}\}/g,campName||'');
+}
+
+function switchTab(t){
+  ['setup','preview'].forEach(x=>{
+    document.getElementById('pane-'+x).style.display=x===t?'block':'none';
+    document.getElementById('tab-'+x[0]).classList.toggle('active',x===t);
+  });
+}
+
+function doPreview(){
+  switchTab('preview');
+  const all=[];campaigns.forEach(c=>buildRows(c).forEach(r=>all.push({r,c})));
+  const ec={'Campaign':'e-c','Ad group':'e-ag','Product ad':'e-pa','Product targeting':'e-pt','Keyword':'e-kw','Negative keyword':'e-nk','Negative product targeting':'e-nk','Bidding adjustment':'e-ba'};
+  document.getElementById('pane-preview').innerHTML=`
+    <div class="prev-kpis">
+      <div class="kpi"><div class="kpi-n">${campaigns.length}</div><div class="kpi-l">Campaigns</div></div>
+      <div class="kpi"><div class="kpi-n">${all.filter(x=>x.r[1]==='Ad group').length}</div><div class="kpi-l">Ad Groups</div></div>
+      <div class="kpi"><div class="kpi-n">${all.length}</div><div class="kpi-l">Total Rows</div></div>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <button class="btn-sm" onclick="doPreview()">↺ Refresh</button>
+        <button class="btn-main" onclick="doExport()">↓ Download .xlsx</button>
+      </div>
+    </div>
+    ${!all.length
+      ?'<div class="tbl-wrap" style="padding:40px;text-align:center;color:var(--w3)">Add products first</div>'
+      :`<div class="tbl-wrap"><table class="ptbl">
+        <thead><tr>${COLS.slice(0,19).map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${all.map(({r,c})=>{const mp=mpMap[c.market]||mpMap['US'];return`<tr>${r.slice(0,19).map((v,i)=>{
+          if(i===1)return`<td><span class="etag ${ec[v]||'e-ba'}">${v}</span></td>`;
+          if([15,17,18].includes(i)&&v!=='')return`<td>${mp.sym}${v}</td>`;
+          return`<td>${v}</td>`;
+        }).join('')}</tr>`;}).join('')}</tbody>
+      </table></div>`}`;
+  syncStats();
+}
+
+// ── Real xlsx export using SheetJS ──
+function doExport(){
+  const all=[];campaigns.forEach(c=>buildRows(c).forEach(r=>all.push(r)));
+  if(!all.length){showToast('Add products to at least one campaign first.','err');return;}
+
+  const btn=document.getElementById('dl-btn');
+  if(btn){btn.innerHTML='<span class="spinner"></span> Building...';btn.disabled=true;}
+
+  try{
+    const data=[COLS,...all];
+    const ws=XLSX.utils.aoa_to_sheet(data);
+
+    // Auto-width columns
+    const colW=COLS.map((h,ci)=>{
+      let max=h.length;
+      all.forEach(row=>{const v=String(row[ci]||'');if(v.length>max)max=v.length;});
+      return{wch:Math.min(max+2,40)};
+    });
+    ws['!cols']=colW;
+
+    // Freeze header row
+    ws['!freeze']={xSplit:0,ySplit:1,topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
+
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Sponsored Products');
+
+    const dateStr=new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const fname=`TrioPerspective_BulkSheet_${campaigns.length}camps_${dateStr}.xlsx`;
+    XLSX.writeFile(wb,fname);
+    showToast(`✓ Downloaded ${fname}`);
+  }catch(err){
+    showToast('Export failed: '+err.message,'err');
+    console.error(err);
+  }
+
+  setTimeout(()=>{if(btn){btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export .xlsx';btn.disabled=false;}},1500);
+}
+
+function showToast(msg,type){
+  const t=document.createElement('div');
+  t.className='toast'+(type==='err'?' err':'');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+function saveConfig(){
+  const blob=new Blob([JSON.stringify(campaigns,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='trio-ppc-config.json';a.click();URL.revokeObjectURL(url);
+  showToast('Config saved!');
+}
+function loadConfig(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        campaigns=Array.isArray(d)?d:[d];
+        activeCampId=campaigns.length?campaigns[0].id:null;
+        renderList();
+        if(activeCampId)renderEditor(activeCampId);else showEmpty();
+        syncStats();
+        showToast('Loaded '+campaigns.length+' campaign(s).');
+      }catch(err){showToast('Invalid config file.','err');}
+    };
+    r.readAsText(file);
+  };
+  inp.click();
+}
+
+renderList();syncStats();
+</script>
+</body>
+</html>

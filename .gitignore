@@ -26,3 +26,6 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Vendored at build time by `npm run vendor`
+public/xlsx.full.min.js
