@@ -314,9 +314,9 @@ function delCamp(e,id){e.stopPropagation();campaigns=campaigns.filter(c=>c.id!==
 function showEmpty(){document.getElementById('pane-setup').innerHTML='<div class="empty"><svg width="60" height="60" viewBox="0 0 100 100" fill="none"><path d="M8 8L8 27L41 27L41 16L59 16L59 27L92 27L92 8ZM41 27L59 27L59 92L41 92Z" fill="white"/></svg><h3>No Campaign</h3><p>Click + New Campaign to begin.</p></div>';}
 
 function syncStats(){
-  let tp=0,ta=0,tr=0;
-  campaigns.forEach(c=>{const r=buildRows(c);tp+=c.products.split('\n').filter(l=>l.trim()).length;ta+=r.filter(x=>x[1]==='Ad group').length;tr+=r.length;});
-  document.getElementById('sb-c').textContent=campaigns.length;
+  let tc=0,tp=0,ta=0,tr=0;
+  campaigns.forEach(c=>{const r=buildRows(c);tp+=c.products.split('\n').filter(l=>l.trim()).length;tc+=r.filter(x=>x[1]==='Campaign').length;ta+=r.filter(x=>x[1]==='Ad group').length;tr+=r.length;});
+  document.getElementById('sb-c').textContent=tc;
   document.getElementById('sb-p').textContent=tp;
   document.getElementById('sb-ag').textContent=ta;
   document.getElementById('sb-r').textContent=tr;
@@ -482,11 +482,11 @@ function renderEditor(id){
   syncStats();
 }
 
-function upd(id,k,v){const c=campaigns.find(x=>x.id===id);if(c)c[k]=v;}
+function upd(id,k,v){const c=campaigns.find(x=>x.id===id);if(c)c[k]=v;syncStats();}
 function toggleTgt(id,k){const c=campaigns.find(x=>x.id===id);if(!c)return;c.tgt[k]=!c.tgt[k];renderList();renderEditor(id);}
 function appendT(id,f,v){const c=campaigns.find(x=>x.id===id);if(!c)return;c[f]=(c[f]||'')+v;renderEditor(id);}
 function addKw(id){const c=campaigns.find(x=>x.id===id);if(!c)return;const m=mpMap[c.market]||mpMap['US'];c.keywords.push({text:'',match:'exact',bid:m.defBid});renderEditor(id);}
-function updKw(id,i,f,v){const c=campaigns.find(x=>x.id===id);if(c&&c.keywords[i])c.keywords[i][f]=v;}
+function updKw(id,i,f,v){const c=campaigns.find(x=>x.id===id);if(c&&c.keywords[i])c.keywords[i][f]=v;syncStats();}
 function rmKw(id,i){const c=campaigns.find(x=>x.id===id);if(!c)return;c.keywords.splice(i,1);renderEditor(id);}
 
 const COLS=['Product','Entity','Operation','Campaign ID','Ad Group ID','Portfolio ID','Ad ID','Keyword ID','Product Targeting ID','Campaign Name','Ad Group Name','Start Date','End Date','Targeting Type','State','Daily Budget','SKU','Ad Group Default Bid','Bid','Keyword Text','Native Language Keyword','Native Language Locale','Match Type','Bidding Strategy','Placement','Percentage','Product Targeting Expression','Audience ID','Shopper Cohort Percentage','Shopper Cohort Type','Segment Name'];
@@ -503,30 +503,43 @@ function buildRows(c){
     return r;
   }
 
-  prods.forEach(p=>{
-    const cn=resolveTpl(c.campTpl,p,ds),an=resolveTpl(c.adgTpl,p,ds,cn),tt=c.tgt.auto?'auto':'manual';
-    rows.push(row('Campaign',{'Campaign ID':cn,'Campaign Name':cn,'Start Date':ds,'Targeting Type':tt,'State':c.state,'Daily Budget':c.budget,'Bidding Strategy':c.bidding}));
-    rows.push(row('Ad group',{'Campaign ID':cn,'Ad Group ID':an,'Ad Group Name':an,'State':c.state,'Ad Group Default Bid':c.defBid}));
-    rows.push(row('Product ad',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'SKU':c.acct==='seller'?p.sku:p.asin}));
+  const keywords=(c.keywords||[]).filter(kw=>kw.text&&kw.text.trim());
+  const ptAsins=(c.ptAsins||'').split('\n').map(a=>a.trim()).filter(Boolean);
+  const negKws=(c.negKws||'').split('\n').map(k=>k.trim()).filter(Boolean);
+  const negAsins=(c.negAsins||'').split('\n').map(a=>a.trim()).filter(Boolean);
+  const negMatches=[c.negExact&&'negativeExact',c.negPhrase&&'negativePhrase'].filter(Boolean);
 
-    if(c.tgt.auto){
-      [{chk:c.autoClose,bid:c.bidClose,ex:'close-match'},{chk:c.autoLoose,bid:c.bidLoose,ex:'loose-match'},{chk:c.autoSubs,bid:c.bidSubs,ex:'substitutes'},{chk:c.autoComp,bid:c.bidComp,ex:'complements'}]
-        .forEach(g=>{if(g.chk)rows.push(row('Product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Bid':g.bid,'Product Targeting Expression':g.ex}));});
-    }
-    if(c.tgt.kw&&c.keywords){
-      c.keywords.forEach(kw=>{if(kw.text)rows.push(row('Keyword',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Keyword Text':kw.text,'Match Type':kw.match,'Bid':kw.bid||c.defBid}));});
-    }
-    if(c.tgt.pt&&c.ptAsins){
-      c.ptAsins.split('\n').filter(a=>a.trim()).forEach(asin=>{rows.push(row('Product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Bid':c.ptBid||c.defBid,'Product Targeting Expression':`asin="${asin.trim()}"`}));});
-    }
-    [{v:c.plTop,pl:'placementTop'},{v:c.plRest,pl:'placementRestOfSearch'},{v:c.plProd,pl:'placementProductPage'}]
-      .forEach(pl=>{if(pl.v>0)rows.push(row('Bidding adjustment',{'Campaign ID':cn,'Placement':pl.pl,'Percentage':pl.v}));});
-    (c.negKws||'').split('\n').filter(k=>k.trim()).forEach(kw=>{
-      const al=c.negAdgLvl?an:'';
-      if(c.negExact)rows.push(row('Negative keyword',{'Campaign ID':cn,'Ad Group ID':al,'State':'enabled','Keyword Text':kw.trim(),'Match Type':'negativeExact'}));
-      if(c.negPhrase)rows.push(row('Negative keyword',{'Campaign ID':cn,'Ad Group ID':al,'State':'enabled','Keyword Text':kw.trim(),'Match Type':'negativePhrase'}));
+  // Amazon rejects keyword/ASIN targets inside an auto campaign, so each targeting type gets its own campaign.
+  const types=[];
+  if(c.tgt.auto)types.push({key:'AUTO',tt:'auto'});
+  if(c.tgt.kw&&keywords.length)types.push({key:'KW',tt:'manual'});
+  if(c.tgt.pt&&ptAsins.length)types.push({key:'PT',tt:'manual'});
+
+  prods.forEach(p=>{
+    types.forEach(t=>{
+      const cn=resolveTpl(c.campTpl,p,ds)+'_'+t.key,an=resolveTpl(c.adgTpl,p,ds,cn);
+      rows.push(row('Campaign',{'Campaign ID':cn,'Campaign Name':cn,'Start Date':ds,'Targeting Type':t.tt,'State':c.state,'Daily Budget':c.budget,'Bidding Strategy':c.bidding}));
+      rows.push(row('Ad group',{'Campaign ID':cn,'Ad Group ID':an,'Ad Group Name':an,'State':c.state,'Ad Group Default Bid':c.defBid}));
+      rows.push(row('Product ad',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'SKU':c.acct==='seller'?p.sku:p.asin}));
+
+      if(t.key==='AUTO'){
+        [{chk:c.autoClose,bid:c.bidClose,ex:'close-match'},{chk:c.autoLoose,bid:c.bidLoose,ex:'loose-match'},{chk:c.autoSubs,bid:c.bidSubs,ex:'substitutes'},{chk:c.autoComp,bid:c.bidComp,ex:'complements'}]
+          .forEach(g=>{if(g.chk)rows.push(row('Product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Bid':g.bid,'Product Targeting Expression':g.ex}));});
+      }else if(t.key==='KW'){
+        keywords.forEach(kw=>rows.push(row('Keyword',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Keyword Text':kw.text.trim(),'Match Type':kw.match,'Bid':kw.bid||c.defBid})));
+      }else{
+        ptAsins.forEach(asin=>rows.push(row('Product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':c.state,'Bid':c.ptBid||c.defBid,'Product Targeting Expression':`asin="${asin}"`})));
+      }
+
+      [{v:c.plTop,pl:'placementTop'},{v:c.plRest,pl:'placementRestOfSearch'},{v:c.plProd,pl:'placementProductPage'}]
+        .forEach(pl=>{if(pl.v>0)rows.push(row('Bidding adjustment',{'Campaign ID':cn,'Placement':pl.pl,'Percentage':pl.v}));});
+
+      negKws.forEach(kw=>negMatches.forEach(mt=>{
+        if(c.negCampLvl)rows.push(row('Campaign negative keyword',{'Campaign ID':cn,'State':'enabled','Keyword Text':kw,'Match Type':mt}));
+        if(c.negAdgLvl)rows.push(row('Negative keyword',{'Campaign ID':cn,'Ad Group ID':an,'State':'enabled','Keyword Text':kw,'Match Type':mt}));
+      }));
+      negAsins.forEach(asin=>rows.push(row('Negative product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':'enabled','Product Targeting Expression':`asin="${asin}"`})));
     });
-    (c.negAsins||'').split('\n').filter(a=>a.trim()).forEach(asin=>{rows.push(row('Negative product targeting',{'Campaign ID':cn,'Ad Group ID':an,'State':'enabled','Product Targeting Expression':`asin="${asin.trim()}"`}));});
   });
   return rows;
 }
@@ -550,10 +563,10 @@ function switchTab(t){
 function doPreview(){
   switchTab('preview');
   const all=[];campaigns.forEach(c=>buildRows(c).forEach(r=>all.push({r,c})));
-  const ec={'Campaign':'e-c','Ad group':'e-ag','Product ad':'e-pa','Product targeting':'e-pt','Keyword':'e-kw','Negative keyword':'e-nk','Negative product targeting':'e-nk','Bidding adjustment':'e-ba'};
+  const ec={'Campaign':'e-c','Ad group':'e-ag','Product ad':'e-pa','Product targeting':'e-pt','Keyword':'e-kw','Negative keyword':'e-nk','Campaign negative keyword':'e-nk','Negative product targeting':'e-nk','Bidding adjustment':'e-ba'};
   document.getElementById('pane-preview').innerHTML=`
     <div class="prev-kpis">
-      <div class="kpi"><div class="kpi-n">${campaigns.length}</div><div class="kpi-l">Campaigns</div></div>
+      <div class="kpi"><div class="kpi-n">${all.filter(x=>x.r[1]==='Campaign').length}</div><div class="kpi-l">Campaigns</div></div>
       <div class="kpi"><div class="kpi-n">${all.filter(x=>x.r[1]==='Ad group').length}</div><div class="kpi-l">Ad Groups</div></div>
       <div class="kpi"><div class="kpi-n">${all.length}</div><div class="kpi-l">Total Rows</div></div>
       <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
